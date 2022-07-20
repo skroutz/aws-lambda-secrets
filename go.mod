@@ -1,4 +1,4 @@
-module lambda-example
+module lambda-secrets
 
 go 1.15
 
