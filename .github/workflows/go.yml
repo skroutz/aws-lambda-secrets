@@ -26,8 +26,7 @@ jobs:
       run: go test -v ./...
 
 
-    - name: Action Release
-      uses: yakuhzi/release-asset@v1.2.3
+    - uses: google-github-actions/release-please-action@v3
       with:
-        # File to upload to the release
-        file: lambda-secrets
+        release-type: go
+        package-name: release-please-action
