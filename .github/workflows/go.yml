@@ -25,8 +25,8 @@ jobs:
       run: go test -v ./...
 
 
-- name: Action Release
-  uses: yakuhzi/release-asset@v1.2.3
-  with:
-    # File to upload to the release
-    file: lambda-secrets
+    - name: Action Release
+      uses: yakuhzi/release-asset@v1.2.3
+      with:
+        # File to upload to the release
+        file: lambda-secrets
