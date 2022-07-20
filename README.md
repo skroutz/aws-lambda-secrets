@@ -21,6 +21,8 @@ secrets: # a YAML list that
     name: SECRET_VALUE_2
   - valueFrom: 'lambda-secrets/test3' # <-- Path for same AWS Account secrets - Works!
     name: SECRET_VALUE_3
+  - valueFrom: '5up3r5ecre7p@55w0rd' # <-- The Secret itself - DOES NOT WORK!
+    name: SECRET_VALUE_4
   [...]
 ```
 
