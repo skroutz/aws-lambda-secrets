@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -51,7 +52,7 @@ func getCommandParams() {
 	// Parse all of the command line args into the specified vars with the defaults
 	flag.Parse()
 
-	if flag.NArg() != 0{
+	if flag.NArg() != 0 {
 		log.Printf("Positional Argument treated as entrypoint: %s", flag.Args())
 		entrypointArray = flag.Args()
 	} else if os.Getenv(ENTRYPOINT_ENV_VAR) != "" {
@@ -76,6 +77,27 @@ func CreateExportLine(envvar string, secret string) string {
 	return result
 }
 
+func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]string, outputFile *os.File, mtx *sync.Mutex, wg *sync.WaitGroup) {
+	log.Printf("[+] Loading '%s' from '%s'\n", secretTuple["name"], secretTuple["valueFrom"])
+
+	// try to fetch each ARN
+	result, err := GetSecret(ctx, cfg, secretTuple["valueFrom"])
+	if err != nil {
+		log.Panicf("[AWS] Secret '%s' could not be loaded", secretTuple["valueFrom"])
+		os.Exit(100)
+	}
+	exportLine := CreateExportLine(secretTuple["name"], *result.SecretString)
+
+	mtx.Lock()
+	_, err = outputFile.Write([]byte(exportLine))
+	if err != nil {
+		log.Panicf("Error Writing to File: %s", outputFileName)
+		os.Exit(100)
+	}
+	mtx.Unlock()
+	wg.Done()
+}
+
 // This function starts execution of the entrypoint
 // and exits when it returns
 func ExecuteEntrypoint() {
@@ -92,7 +114,7 @@ func ExecuteEntrypoint() {
 		cmd, err = exec.Command("sh", "-c", entrypoint).Output()
 	} else {
 		log.Printf("Passing execution to '%s'\n\n", entrypointArray)
-		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()		
+		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()
 	}
 	if err != nil {
 		log.Fatalf("Error running the entrypoint. '%s'", err)
@@ -162,21 +184,19 @@ func main() {
 		os.Exit(3)
 	}
 
+	// Mutex for outputFile fd
+	mtx := new(sync.Mutex)
+	wg := new(sync.WaitGroup)
+
 	// Iterate through the ARNs
 	secretsList := secretArnStruct["secrets"]
 	for _, secretTuple := range secretsList {
-		log.Printf("[+] Loading '%s' from '%s'\n", secretTuple["name"], secretTuple["valueFrom"])
-
-		// try to fetch each ARN
-		result, err := GetSecret(ctx, cfg, secretTuple["valueFrom"])
-		if err != nil {
-			log.Panicf("[AWS] Secret '%s' could not be loaded", secretTuple["valueFrom"])
-			os.Exit(100)
-		}
-
-		exportLine := CreateExportLine(secretTuple["name"], *result.SecretString)
-		_, err = outputFile.Write([]byte(exportLine))
+		wg.Add(1)
+		go handleSecret(ctx, cfg, secretTuple, outputFile, mtx, wg)
 	}
+
+	// Wait for all go routines to finish
+	wg.Wait()
 	outputFile.Close()
 
 	// Now that the secrets are set
