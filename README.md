@@ -12,7 +12,7 @@ The YAML file can be located anywhere and the location can be set to the binary 
 
 The syntax of the file is as follows:
 
-```
+```yaml
 secrets: # a YAML list that
 	# contains maps of `valueFrom` and `name` keys
   - valueFrom: 'arn:aws:secretsmanager:eu-central-1:11111111111:secret:lambda-secrets/test1-VeF2Fu' # <-- Full ARN - Works!
@@ -30,7 +30,7 @@ The syntax is the YAML equivalent of the JSON [ECS Task Definition `secrets` fie
 ### Standalone
 
 #### First Execution (Cold Start)
-```
+```bash
 $ lambda-secrets env
 2022/07/20 17:02:28 Positional Argument treated as entrypoint: [env]
 2022/07/20 17:02:28 Looking for Dotenv file '/tmp/lambda-secrets.env'
@@ -51,7 +51,7 @@ SECRET_VALUE_3=Just a line
 ```
 
 #### Later Execution (with `/tmp/lambda-secrets.env` already in-place)
-```
+```bash
 $ lambda-secrets env
 2022/07/20 17:03:30 Positional Argument treated as entrypoint: [env]
 2022/07/20 17:03:30 Looking for Dotenv file '/tmp/lambda-secrets.env'
