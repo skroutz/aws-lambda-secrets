@@ -71,9 +71,42 @@ SECRET_VALUE_3=Just a line
 
 ## Container
 
+### Building the Container
 
 ```bash
 $ docker build -t lambda-secrets .
+```
+
+### Running with CLI Entrypoint
+The container accepts the CLI positional arguments as Entrypoint:
+```bash
+$ docker run -ti \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  -v`pwd`/secrets.yaml:/app/secrets.yaml \
+  lambda-secrets env
+2022/07/21 13:42:17 [*] Positional Argument treated as entrypoint: [env]
+2022/07/21 13:42:17 [*] Looking for Dotenv file '/tmp/lambda-secrets.env'
+2022/07/21 13:42:17 [!] Dotenv file '/tmp/lambda-secrets.env' NOT found!
+2022/07/21 13:42:17 [*] Loading Secrets from AWS SecretsManager
+2022/07/21 13:42:17 [+] Loading 'SECRET_VALUE_3' from 'lambda-secrets/test2'
+2022/07/21 13:42:17 [+] Loading 'SECRET_VALUE_1' from 'arn:aws:secretsmanager:eu-central-1:533973265978:secret:lambda-secrets/test1'
+2022/07/21 13:42:17 [+] Loading 'SECRET_VALUE_2' from 'arn:aws:secretsmanager:eu-central-1:533973265978:secret:lambda-secrets/test2'
+2022/07/21 13:42:18 [+] Passing execution to '[env]'
+
+[...]
+SECRET_VALUE_1={"username":"admin","password":"adm1n"}
+SECRET_VALUE_2=Just a line
+SECRET_VALUE_3=Just a line
+
+2022/07/21 13:42:18 [+] Execution finished
+
+```
+
+### Running with `ENTRYPOINT` Environment Variable
+For more complex Entrypoints that need to be evaluated from Unix shell, the `ENTRYPOINT` Environment Variable can be used:
+```bash
 $ docker run -ti \
   -e AWS_ACCESS_KEY_ID \
   -e AWS_SECRET_ACCESS_KEY \
@@ -81,7 +114,7 @@ $ docker run -ti \
   -e ENTRYPOINT='env | grep SECRET_VALUE' \
   -v`pwd`/secrets.yaml:/app/secrets.yaml \
   lambda-secrets
-2022/07/21 12:26:47 [*] Environment Variable 'ENTRYPOINT' is treated as entrypoint: env
+2022/07/21 12:26:47 [*] Environment Variable 'ENTRYPOINT' is treated as entrypoint: env | grep SECRET_VALUE
 2022/07/21 12:26:47 [*] Looking for Dotenv file '/tmp/lambda-secrets.env'
 2022/07/21 12:26:47 [!] Dotenv file '/tmp/lambda-secrets.env' NOT found!
 2022/07/21 12:26:47 [*] Loading Secrets from AWS SecretsManager
@@ -98,6 +131,57 @@ ENTRYPOINT='env | grep SECRET_VALUE'
 
 2022/07/21 12:26:48 [+] Execution finished
 ```
+
+### Lambda Container Use-Case
+
+The Container to be used by the AWS Lambda Function
+```dockerfile
+FROM alpine:3.16 AS lambda-container
+
+# Add the Lambda application to be run
+WORKDIR /app/
+COPY lambda-application /app/
+
+# == Setup 'lambda-secrets' ==
+# Add 'lambda-secrets' binary from Container Image
+COPY --from=lambda-secrets:latest /app/lambda-secrets /app/
+COPY secrets-prod.yaml /app/secrets.yaml
+
+# Ensure 'lambda-secrets' runs BEFORE the Lambda application
+ENTRYPOINT ["/app/lambda-secrets"]
+
+# Pass the actual ENTRYPOINT to 'lambda-secrets':
+
+# - Cleaner and has priority:
+# CMD ["/app/lambda-application"]
+# - Supports Shell notation such as pipes, loops
+ENV ENTRYPOINT "/app/lambda-application"
+```
+
+```bash
+$ docker build -t lambda-secrets-example . -f example/Dockerfile
+```
+
+```bash
+$ docker run -ti \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  lambda-secrets-example
+2022/07/21 14:08:31 [*] Environment Variable 'ENTRYPOINT' is treated as entrypoint: /app/lambda-application
+2022/07/21 14:08:31 [*] Looking for Dotenv file '/tmp/lambda-secrets.env'
+2022/07/21 14:08:31 [!] Dotenv file '/tmp/lambda-secrets.env' NOT found!
+2022/07/21 14:08:31 [*] Loading Secrets from AWS SecretsManager
+2022/07/21 14:08:31 [+] Loading 'SECRET_VALUE_3' from 'lambda-secrets/test2'
+2022/07/21 14:08:31 [+] Loading 'SECRET_VALUE_1' from 'arn:aws:secretsmanager:eu-central-1:11111111111:secret:lambda-secrets/test1'
+2022/07/21 14:08:31 [+] Loading 'SECRET_VALUE_2' from 'arn:aws:secretsmanager:eu-central-1:11111111111:secret:lambda-secrets/test2'
+2022/07/21 14:08:33 [+] Passing execution to '/app/lambda-application'
+
+This is the Lambda entrypoint!
+The secret is: '{"username":"admin","password":"adm1n"}'
+
+2022/07/21 14:08:33 [+] Execution finished
+````
 
 
 ## Reference
