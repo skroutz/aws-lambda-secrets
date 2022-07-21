@@ -69,6 +69,36 @@ SECRET_VALUE_3=Just a line
 2022/07/20 17:03:30 Execution finished
 ```
 
+## Container
+
+
+```bash
+$ docker build -t lambda-secrets .
+$ docker run -ti \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  -e ENTRYPOINT='env | grep SECRET_VALUE' \
+  -v`pwd`/secrets.yaml:/app/secrets.yaml \
+  lambda-secrets
+2022/07/21 12:26:47 [*] Environment Variable 'ENTRYPOINT' is treated as entrypoint: env
+2022/07/21 12:26:47 [*] Looking for Dotenv file '/tmp/lambda-secrets.env'
+2022/07/21 12:26:47 [!] Dotenv file '/tmp/lambda-secrets.env' NOT found!
+2022/07/21 12:26:47 [*] Loading Secrets from AWS SecretsManager
+2022/07/21 12:26:47 [+] Loading 'SECRET_VALUE_1' from 'arn:aws:secretsmanager:eu-central-1:11111111111:secret:lambda-secrets/test1'
+2022/07/21 12:26:48 [+] Loading 'SECRET_VALUE_2' from 'arn:aws:secretsmanager:eu-central-1:11111111111:secret:lambda-secrets/test2'
+2022/07/21 12:26:48 [+] Loading 'SECRET_VALUE_3' from 'lambda-secrets/test2'
+2022/07/21 12:26:48 [+] Passing execution to 'env'
+
+
+SECRET_VALUE_1={"username":"admin","password":"adm1n"}
+SECRET_VALUE_2=Just a line
+SECRET_VALUE_3=Just a line
+ENTRYPOINT='env | grep SECRET_VALUE'
+
+2022/07/21 12:26:48 [+] Execution finished
+```
+
 
 ## Reference
 
