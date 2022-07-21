@@ -68,3 +68,13 @@ SECRET_VALUE_3=Just a line
 
 2022/07/20 17:03:30 Execution finished
 ```
+
+
+## Reference
+
+### Exit Codes
+
+* `0`: Successful run of the Entrypoint with Environment Variable Secrets loaded
+* `1`-`99`: File operation failure (file could not be found/read)
+* `100`-`199`: AWS-related issues (wrong IAM Policies attached / no IAM credentials found, etc)
+* `200`-`255`: Entrypoint Execution issues (Go `cmd.exec` failed)
