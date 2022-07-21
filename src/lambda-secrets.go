@@ -80,26 +80,23 @@ func CreateExportLine(envvar string, secret string) string {
 
 func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]string, outputFile *os.File, mtx *sync.Mutex, wg *sync.WaitGroup) {
 	log.Printf("[+] Loading '%s' from '%s'\n", secretTuple["name"], secretTuple["valueFrom"])
+	defer wg.Done()
 
 	// try to fetch each ARN
 	result, err := GetSecret(ctx, cfg, secretTuple["valueFrom"])
 	if err != nil {
 		log.Printf("[-] AWS Secret '%s' could not be loaded. %s", secretTuple["valueFrom"], err.Error())
 		exitCode = 101
-		wg.Done()
 		return
 	}
 	exportLine := CreateExportLine(secretTuple["name"], *result.SecretString)
 
 	mtx.Lock()
+	defer mtx.Unlock()
 	_, err = outputFile.Write([]byte(exportLine))
-	mtx.Unlock()
-	defer wg.Done()
 	if err != nil {
 		log.Printf("Error Writing to File: %s", outputFileName)
 		exitCode = 4
-		mtx.Unlock()
-		wg.Done()
 		return
 	}
 }
