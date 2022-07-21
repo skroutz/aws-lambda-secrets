@@ -41,7 +41,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: '[Terragrunt] Plan'
+    - name: '[Terragrunt] Apply'
       working-directory: ${{ env.TERRAFORM_DIR }}
       run: |
         terraform init
