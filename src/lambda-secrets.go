@@ -53,12 +53,12 @@ func getCommandParams() {
 	flag.Parse()
 
 	if flag.NArg() != 0 {
-		log.Printf("Positional Argument treated as entrypoint: %s", flag.Args())
+		log.Printf("[*] Positional Argument treated as entrypoint: %s", flag.Args())
 		entrypointArray = flag.Args()
 	} else if os.Getenv(ENTRYPOINT_ENV_VAR) != "" {
-		log.Printf("Environment Variable '%s' is treated as entrypoint: %s", ENTRYPOINT_ENV_VAR, os.Getenv(ENTRYPOINT_ENV_VAR))
+		log.Printf("[*] Environment Variable '%s' is treated as entrypoint: %s", ENTRYPOINT_ENV_VAR, os.Getenv(ENTRYPOINT_ENV_VAR))
 	} else {
-		log.Println("No entrypoint found")
+		log.Println("[!] No entrypoint found")
 	}
 }
 
@@ -103,28 +103,28 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 func ExecuteEntrypoint() {
 	err := godotenv.Load(outputFileName)
 	if err != nil {
-		log.Fatalf("Error loading  EnvVars from '%s' file", outputFileName)
+		log.Printf("[-] Error loading  EnvVars from '%s' file", outputFileName)
 		os.Exit(200)
 	}
 	err = nil
 	cmd := []byte{}
 	if entrypointArray == nil {
 		entrypoint := os.Getenv(ENTRYPOINT_ENV_VAR)
-		log.Printf("Passing execution to '%s'\n\n", entrypoint)
+		log.Printf("[+] Passing execution to '%s'\n\n", entrypoint)
 		cmd, err = exec.Command("sh", "-c", entrypoint).Output()
 	} else {
-		log.Printf("Passing execution to '%s'\n\n", entrypointArray)
-		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()
+		log.Printf("[+] Passing execution to '%s'\n\n", entrypointArray)
+		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()		
 	}
 	if err != nil {
-		log.Fatalf("Error running the entrypoint. '%s'", err)
+		log.Printf("[-] Error running the entrypoint. '%s'", err)
 		os.Exit(201)
 		return
 	}
 
 	fmt.Println(string(cmd))
 
-	log.Printf("Execution finished")
+	log.Printf("[+] Execution finished")
 	os.Exit(0)
 }
 
@@ -136,7 +136,7 @@ func main() {
 
 	// Check if output file exists
 	// If it does load it, pass execution and exit
-	log.Printf("Looking for Dotenv file '%s'", outputFileName)
+	log.Printf("[*] Looking for Dotenv file '%s'", outputFileName)
 	if stat, err := os.Stat(outputFileName); err == nil {
 		if stat.Size() != 0 {
 			log.Printf("Dotenv file '%s' found!", outputFileName)
@@ -144,8 +144,8 @@ func main() {
 		}
 	}
 
-	log.Printf("Dotenv file '%s' NOT found!", outputFileName)
-	log.Println("Loading Secrets from AWS SecretsManager")
+	log.Printf("[!] Dotenv file '%s' NOT found!", outputFileName)
+	log.Println("[*] Loading Secrets from AWS SecretsManager")
 
 	// Setup a new context to allow for limited execution time for API calls with a default of 200 milliseconds
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(timeout)*time.Millisecond)
@@ -164,7 +164,7 @@ func main() {
 	// Read the file contents
 	content, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
-		log.Panicf("File '%s' could not be opened!", secretsFile)
+		log.Printf("[-] File '%s' could not be opened!", secretsFile)
 		os.Exit(1)
 	}
 
@@ -172,7 +172,7 @@ func main() {
 	secretArnStruct := make(map[interface{}][]map[string]string)
 	err = yaml.Unmarshal(content, secretArnStruct)
 	if err != nil {
-		log.Panicf("File '%s' could not be parsed!", secretsFile)
+		log.Printf("[-] File '%s' could not be parsed!", secretsFile)
 		os.Exit(2)
 	}
 
@@ -180,7 +180,7 @@ func main() {
 	outputFile, err := os.OpenFile(outputFileName,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
-		log.Panicf("File '%s' could not be writen!", outputFileName)
+		log.Printf("[-] File '%s' could not be writen!", outputFileName)
 		os.Exit(3)
 	}
 
