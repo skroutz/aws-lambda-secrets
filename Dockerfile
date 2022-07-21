@@ -2,12 +2,12 @@ FROM golang:1.18-alpine AS builder
 
 WORKDIR /app
 
-COPY src/* .
+COPY src/* /app/
 
 RUN go mod verify && \
 	go build -v ./...
 
-FROM alpine:3.17 AS runtime
+FROM alpine:3.16 AS runtime
 
 WORKDIR /app
 
