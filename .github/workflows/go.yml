@@ -3,9 +3,11 @@ name: Go
 on:
   push:
     tags: "releases/[1-9]+.[0-9]+.[0-9]+"
-    branches: [ "main" ]
-    # paths:
-    #   - 'src/**'
+    branches: 
+      - 'main'
+      - 'develop/*'
+    paths:
+      - 'src/**'
   pull_request:
     branches: [ "main" ]
     paths:
