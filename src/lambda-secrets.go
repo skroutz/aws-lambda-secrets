@@ -36,6 +36,7 @@ var (
 	outputFileName   string
 	entrypointEnvVar string
 	entrypointArray  []string
+	exitCode      	 int
 )
 
 func getCommandParams() {
@@ -83,8 +84,10 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 	// try to fetch each ARN
 	result, err := GetSecret(ctx, cfg, secretTuple["valueFrom"])
 	if err != nil {
-		log.Panicf("[AWS] Secret '%s' could not be loaded", secretTuple["valueFrom"])
-		os.Exit(100)
+		log.Printf("[-] AWS Secret '%s' could not be loaded. %s", secretTuple["valueFrom"], err.Error())
+		exitCode = 101
+		wg.Done()
+		return
 	}
 	exportLine := CreateExportLine(secretTuple["name"], *result.SecretString)
 
@@ -93,8 +96,11 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 	mtx.Unlock()
 	defer wg.Done()
 	if err != nil {
-		log.Panicf("Error Writing to File: %s", outputFileName)
-		os.Exit(100)
+		log.Printf("Error Writing to File: %s", outputFileName)
+		exitCode = 4
+		mtx.Unlock()
+		wg.Done()
+		return
 	}
 }
 
@@ -157,7 +163,7 @@ func main() {
 		return retry.AddWithMaxAttempts(aws.NopRetryer{}, 1)
 	}))
 	if err != nil {
-		panic("configuration error " + err.Error())
+		log.Println("[*] Loading Secrets from AWS SecretsManager")
 	}
 
 	// ================
@@ -195,9 +201,13 @@ func main() {
 		go handleSecret(ctx, cfg, secretTuple, outputFile, mtx, wg)
 	}
 
+
 	// Wait for all go routines to finish
 	wg.Wait()
 	outputFile.Close()
+	if exitCode != 0{
+		os.Exit(exitCode)
+	}
 
 	// Now that the secrets are set
 	// Pass execution
