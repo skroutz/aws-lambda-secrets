@@ -95,7 +95,7 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 	defer mtx.Unlock()
 	_, err = outputFile.Write([]byte(exportLine))
 	if err != nil {
-		log.Printf("Error Writing to File: %s", outputFileName)
+		log.Printf("[-] Error Writing to File: %s", outputFileName)
 		exitCode = 4
 		return
 	}
@@ -117,7 +117,7 @@ func ExecuteEntrypoint() {
 		cmd, err = exec.Command("sh", "-c", entrypoint).Output()
 	} else {
 		log.Printf("[+] Passing execution to '%s'\n\n", entrypointArray)
-		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()		
+		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()
 	}
 	if err != nil {
 		log.Printf("[-] Error running the entrypoint. '%s'", err)
