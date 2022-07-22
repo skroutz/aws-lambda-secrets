@@ -160,7 +160,7 @@ func main() {
 		return retry.AddWithMaxAttempts(aws.NopRetryer{}, 1)
 	}))
 	if err != nil {
-		log.Println("[*] Loading Secrets from AWS SecretsManager")
+		log.Println("[*] Loading Secrets from AWS SecretsManager. %s", err.Error())
 	}
 
 	// ================
