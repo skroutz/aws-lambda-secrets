@@ -183,7 +183,7 @@ func main() {
 	outputFile, err := os.OpenFile(outputFileName,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
-		log.Printf("[-] File '%s' could not be writen!", outputFileName)
+		log.Printf("[-] File '%s' could not be writen! %s", outputFileName, err.Error())
 		os.Exit(3)
 	}
 
