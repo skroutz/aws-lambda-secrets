@@ -95,7 +95,7 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 	_, err = outputFile.Write([]byte(exportLine))
 	mtx.Unlock()
 	if err != nil {
-		log.Printf("[-] Error Writing to File: %s", outputFileName)
+		log.Printf("[-] Error Writing to File: %s. %s", outputFileName, err.Error())
 		exitCode = 4
 		return
 	}
