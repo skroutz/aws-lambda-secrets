@@ -175,7 +175,7 @@ func main() {
 	secretArnStruct := make(map[interface{}][]map[string]string)
 	err = yaml.Unmarshal(content, secretArnStruct)
 	if err != nil {
-		log.Printf("[-] File '%s' could not be parsed!", secretsFile)
+		log.Printf("[-] File '%s' could not be parsed! %s", secretsFile, err.Error())
 		os.Exit(2)
 	}
 
