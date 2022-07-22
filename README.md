@@ -159,7 +159,7 @@ ENV ENTRYPOINT "/app/lambda-application"
 ```
 
 ```bash
-$ docker build -t lambda-secrets-example . -f example/Dockerfile
+$ docker build -t lambda-secrets-example example/ -f example/Dockerfile
 ```
 
 ```bash
