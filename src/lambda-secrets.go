@@ -167,7 +167,7 @@ func main() {
 	// Read the file contents
 	content, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
-		log.Printf("[-] File '%s' could not be opened!", secretsFile)
+		log.Printf("[-] File '%s' could not be opened! %s", secretsFile, err.Error())
 		os.Exit(1)
 	}
 
