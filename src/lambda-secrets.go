@@ -106,7 +106,7 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 func ExecuteEntrypoint() {
 	err := godotenv.Load(outputFileName)
 	if err != nil {
-		log.Printf("[-] Error loading  EnvVars from '%s' file", outputFileName)
+		log.Printf("[-] Error loading  EnvVars from '%s' file. %s", outputFileName, err.Error())
 		os.Exit(200)
 	}
 	err = nil
