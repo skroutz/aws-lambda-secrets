@@ -20,6 +20,19 @@ data "aws_iam_policy_document" "user-policy-document" {
       local.ecr-arn
     ]
   }
+
+  statement {
+    sid = "PublishLambdaLayerVersion"
+    effect = "Allow"
+
+    actions = [
+      "lambda:PublishLayerVersion"
+    ]
+
+    resources = [
+      local.lambda-layer-arn
+    ]
+  }
 }
 
 # Add ARN (module.user-policy.arn) to 'module.user-role.custom_role_policy_arns'

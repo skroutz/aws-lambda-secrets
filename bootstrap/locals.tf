@@ -13,6 +13,9 @@ locals {
   iam-deployer-policy = "${local.iam-resource-prefix}DeployerPolicy"
 
   ecr-name = "lambda-secrets"
+  lambda-layer-name = "lambda-secrets-layer"
+
+  lambda-layer-arn = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:layer:${local.lambda-layer-name}"
   ecr-arn = "arn:aws:ecr:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:repository/${local.ecr-name}"
 }
 
