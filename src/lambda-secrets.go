@@ -105,11 +105,12 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 
 // This function starts execution of the entrypoint
 // and exits when it returns
-func ExecuteEntrypoint() {
+func ExecuteEntrypoint()(string, error){
 	err := godotenv.Load(outputFileName)
 	if err != nil {
 		log.Printf("[-] Error loading  EnvVars from '%s' file. %s", outputFileName, err.Error())
-		os.Exit(200)
+		exitCode = 200
+		return "", err
 	}
 	err = nil
 	cmd := []byte{}
@@ -123,18 +124,22 @@ func ExecuteEntrypoint() {
 	}
 	if err != nil {
 		log.Printf("[-] Error running the entrypoint. '%s'", err)
-		os.Exit(201)
-		return
+		exitCode = 201
+		return "", err
 	}
 
 	fmt.Println(string(cmd))
 
 	log.Printf("[+] Execution finished")
-	os.Exit(0)
+	exitCode = 0
+	return string(cmd), nil
 }
 
 func InLambda()(bool){
 
+	// These environment variables are set by AWS Lambdas,
+	// used by 'aws-lambda-go' module:
+	// https://github.com/aws/aws-lambda-go/blob/main/lambda/entry.go#L72
 	if (os.Getenv("_LAMBDA_SERVER_PORT") == "" &&
 		os.Getenv("AWS_LAMBDA_RUNTIME_API") == ""){
 		return false
@@ -142,7 +147,7 @@ func InLambda()(bool){
 	return true
 }
 
-func LambdaSecrets() {
+func LambdaSecrets() (string, error) {
 
 	// ================
 	// Get all of the command line data and perform the necessary validation
@@ -154,7 +159,8 @@ func LambdaSecrets() {
 	if stat, err := os.Stat(outputFileName); err == nil {
 		if stat.Size() != 0 {
 			log.Printf("Dotenv file '%s' found!", outputFileName)
-			ExecuteEntrypoint()
+			output, err := ExecuteEntrypoint()
+			return output, err
 		}
 	}
 
@@ -179,7 +185,8 @@ func LambdaSecrets() {
 	content, err := ioutil.ReadFile(secretsFile)
 	if err != nil {
 		log.Printf("[-] File '%s' could not be opened! %s", secretsFile, err.Error())
-		os.Exit(1)
+		exitCode = 1
+		return "", err
 	}
 
 	// Parse the file - YAML
@@ -187,7 +194,8 @@ func LambdaSecrets() {
 	err = yaml.Unmarshal(content, secretArnStruct)
 	if err != nil {
 		log.Printf("[-] File '%s' could not be parsed! %s", secretsFile, err.Error())
-		os.Exit(2)
+		exitCode = 2
+		return "", err
 	}
 
 	// Open the output file for writing
@@ -195,7 +203,8 @@ func LambdaSecrets() {
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
 		log.Printf("[-] File '%s' could not be writen! %s", outputFileName, err.Error())
-		os.Exit(3)
+		exitCode = 3
+		return "", err
 	}
 
 	// Mutex for outputFile fd
@@ -214,12 +223,13 @@ func LambdaSecrets() {
 	wg.Wait()
 	outputFile.Close()
 	if exitCode != 0{
-		os.Exit(exitCode)
+		return "", err
 	}
 
 	// Now that the secrets are set
 	// Pass execution
-	ExecuteEntrypoint()
+	output, err := ExecuteEntrypoint()
+	return output, err
 }
 
 func main() {
@@ -230,4 +240,5 @@ func main() {
 		log.Println("[*] Not running in AWS Lambda")
 		LambdaSecrets()
 	}
+	os.Exit(exitCode)
 }
