@@ -1,6 +1,12 @@
 #!/bin/sh
 
 echo "This is the Lambda entrypoint!"
+echo "File:"
 echo "============"
-env | grep LAMBDASECRETS | sort
+cat /tmp/lambda-secrets.env
+echo "============"
+echo
+echo "Environment:"
+echo "============"
+env
 echo "============"
