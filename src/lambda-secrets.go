@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,6 +34,7 @@ var (
 	timeout          int
 	region           string
 	secretsFile      string
+	secretsEnv		 map[string]string
 	outputFileName   string
 	entrypointEnvVar string
 	entrypointArray  []string
@@ -73,14 +73,7 @@ func GetSecret(ctx context.Context, cfg aws.Config, arn string) (*secretsmanager
 	})
 }
 
-// A function that states the passed values as dotenv format with 'export'
-func CreateExportLine(envvar string, secret string) string {
-	escaped_secret := strings.Replace(secret, "\"", "\\\"", -1)
-	result := fmt.Sprintf("export %s=\"%s\"\n", envvar, escaped_secret)
-	return result
-}
-
-func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]string, outputFile *os.File, mtx *sync.Mutex, wg *sync.WaitGroup) {
+func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]string, mtx *sync.Mutex, wg *sync.WaitGroup) {
 	log.Printf("[+] Loading '%s' from '%s'\n", secretTuple["name"], secretTuple["valueFrom"])
 	defer wg.Done()
 
@@ -91,16 +84,9 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 		exitCode = 101
 		return
 	}
-	exportLine := CreateExportLine(secretTuple["name"], *result.SecretString)
-
 	mtx.Lock()
-	_, err = outputFile.Write([]byte(exportLine))
+	secretsEnv[secretTuple["name"]] = *result.SecretString
 	mtx.Unlock()
-	if err != nil {
-		log.Printf("[-] Error Writing to File: %s. %s", outputFileName, err.Error())
-		exitCode = 4
-		return
-	}
 }
 
 // This function starts execution of the entrypoint
@@ -194,14 +180,8 @@ func LambdaSecrets() (string, error) {
 		return "", err
 	}
 
-	// Open the output file for writing
-	outputFile, err := os.OpenFile(outputFileName,
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0755)
-	if err != nil {
-		log.Printf("[-] File '%s' could not be writen! %s", outputFileName, err.Error())
-		exitCode = 3
-		return "", err
-	}
+	// Initialize the Env map
+	secretsEnv = make(map[string]string)
 
 	// Mutex for outputFile fd
 	mtx := new(sync.Mutex)
@@ -211,12 +191,17 @@ func LambdaSecrets() (string, error) {
 	secretsList := secretArnStruct["secrets"]
 	for _, secretTuple := range secretsList {
 		wg.Add(1)
-		go handleSecret(ctx, cfg, secretTuple, outputFile, mtx, wg)
+		go handleSecret(ctx, cfg, secretTuple, mtx, wg)
 	}
 
 	// Wait for all go routines to finish
 	wg.Wait()
-	outputFile.Close()
+
+	err = godotenv.Write(secretsEnv, outputFileName)
+	if err != nil {
+		log.Printf("[-] File '%s' could not be writen! %s", outputFileName, err.Error())
+		exitCode = 3
+	}
 
 	// Now that the secrets are hopefully set
 	output, err := ExecuteEntrypoint()
