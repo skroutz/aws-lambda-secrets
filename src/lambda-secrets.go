@@ -221,7 +221,7 @@ func LambdaSecrets() (string, error) {
 	if exitCode != 0 {
 		return output, fmt.Errorf("ExitCode: %n. Reference: https://github.com/skroutz/aws-lambda-secrets#exit-codes", exitCode)
 	} else {
-		return output, nil		
+		return output, nil
 	}
 }
 
