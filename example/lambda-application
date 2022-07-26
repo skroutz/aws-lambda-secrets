@@ -1,4 +1,0 @@
-#!/bin/sh
-
-echo "This is the Lambda entrypoint!"
-echo "The secret is: '$SECRET_VALUE_1'"

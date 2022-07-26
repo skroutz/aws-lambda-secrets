@@ -8,9 +8,25 @@ resource "aws_secretsmanager_secret_version" "plain" {
 }
 
 
+resource "aws_secretsmanager_secret" "multiline" {
+  name = "${local.secretsmanager-path}/multiline"
+}
+
+resource "aws_secretsmanager_secret_version" "multiline" {
+  secret_id     = aws_secretsmanager_secret.multiline.id
+  secret_string = <<EOF
+This is
+a
+Multiline
+Secr3t!
+EOF
+}
+
+
 resource "aws_secretsmanager_secret" "json" {
   name = "${local.secretsmanager-path}/json"
 }
+
 
 resource "aws_secretsmanager_secret_version" "json" {
   secret_id     = aws_secretsmanager_secret.json.id
@@ -32,6 +48,7 @@ resource "aws_secretsmanager_secret_version" "binary" {
 {
   "username": "admin",
   "password": "p@55w0rd!"
+  "binary": true
 }
 EOF
 )

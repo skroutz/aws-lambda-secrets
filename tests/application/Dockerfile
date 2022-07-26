@@ -7,7 +7,7 @@ COPY lambda-application /app/
 # == Setup 'lambda-secrets' ==
 # Add 'lambda-secrets' binary from Container Image
 COPY --from=lambda-secrets:latest /app/lambda-secrets /app/
-COPY secrets-prod.yaml /app/secrets.yaml
+COPY secrets-test.yaml /app/secrets.yaml
 
 # Ensure 'lambda-secrets' runs BEFORE the Lambda application
 ENTRYPOINT ["/app/lambda-secrets"]

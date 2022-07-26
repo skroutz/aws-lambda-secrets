@@ -35,8 +35,6 @@ module "lambda_policy" {
     name = "${local.iam-execution-policy}"
     description = ""
     policy = data.aws_iam_policy_document.lambda-policy.json
-
-    tags = local.tags
 }
 
 # Role to be assumed by Lambda Runtime
@@ -53,7 +51,4 @@ module "lambda_role" {
         "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
         module.lambda_policy.arn,
     ]
-
-    tags = local.tags
-
 }
