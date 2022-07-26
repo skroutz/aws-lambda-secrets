@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"encoding/json"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
@@ -85,7 +86,18 @@ func handleSecret(ctx context.Context, cfg aws.Config, secretTuple map[string]st
 		return
 	}
 	mtx.Lock()
-	secretsEnv[secretTuple["name"]] = *result.SecretString
+	if result.SecretString != nil {
+		secretsEnv[secretTuple["name"]] = *result.SecretString
+		_, err = json.Marshal(*result.SecretString)
+		if err != nil {
+			secretsEnv[secretTuple["name"]+"_TYPE"] = "JSON"
+		} else {
+			secretsEnv[secretTuple["name"]+"_TYPE"] = "PLAIN"
+		}
+	} else {
+		secretsEnv[secretTuple["name"]] = string(result.SecretBinary)
+		secretsEnv[secretTuple["name"]+"_TYPE"] = "BINARY"
+	}
 	mtx.Unlock()
 }
 
