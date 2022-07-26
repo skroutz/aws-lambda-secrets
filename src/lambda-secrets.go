@@ -149,10 +149,6 @@ func InLambda()(bool){
 
 func LambdaSecrets() (string, error) {
 
-	// ================
-	// Get all of the command line data and perform the necessary validation
-	getCommandParams()
-
 	// Check if output file exists
 	// If it does load it, pass execution and exit
 	log.Printf("[*] Looking for Dotenv file '%s'", outputFileName)
@@ -218,21 +214,25 @@ func LambdaSecrets() (string, error) {
 		go handleSecret(ctx, cfg, secretTuple, outputFile, mtx, wg)
 	}
 
-
 	// Wait for all go routines to finish
 	wg.Wait()
 	outputFile.Close()
-	if exitCode != 0{
-		return "", err
-	}
 
-	// Now that the secrets are set
-	// Pass execution
+	// Now that the secrets are hopefully set
 	output, err := ExecuteEntrypoint()
-	return output, err
+
+	if exitCode != 0 {
+		return output, fmt.Errorf("ExitCode: %n. Reference: https://github.com/skroutz/aws-lambda-secrets#exit-codes", exitCode)
+	} else {
+		return output, nil		
+	}
 }
 
 func main() {
+	// ================
+	// Get all of the command line data and perform the necessary validation
+	getCommandParams()
+
 	if InLambda(){
 		log.Println("[*] AWS Lambda Environment Detected")
 		lambda.Start(LambdaSecrets)
