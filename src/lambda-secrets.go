@@ -19,6 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 
+	"github.com/aws/aws-lambda-go/lambda"
+
 	"github.com/joho/godotenv"
 )
 
@@ -131,7 +133,16 @@ func ExecuteEntrypoint() {
 	os.Exit(0)
 }
 
-func main() {
+func InLambda()(bool){
+
+	if (os.Getenv("_LAMBDA_SERVER_PORT") == "" &&
+		os.Getenv("AWS_LAMBDA_RUNTIME_API") == ""){
+		return false
+	}
+	return true
+}
+
+func LambdaSecrets() {
 
 	// ================
 	// Get all of the command line data and perform the necessary validation
@@ -209,4 +220,14 @@ func main() {
 	// Now that the secrets are set
 	// Pass execution
 	ExecuteEntrypoint()
+}
+
+func main() {
+	if InLambda(){
+		log.Println("[*] AWS Lambda Environment Detected")
+		lambda.Start(LambdaSecrets)
+	} else {
+		log.Println("[*] Not running in AWS Lambda")
+		LambdaSecrets()
+	}
 }
