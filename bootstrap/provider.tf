@@ -16,7 +16,7 @@ provider "aws" {
       PartOf       = "https://phabricator.skroutz.gr/T113408"
       DeployedFrom = "https://github.com/skroutz/aws-lambda-secrets"
       Team         = "Security"
-      Environment  = "Testing"
+      Environment  = "Staging"
       ManagedBy    = "Terraform"
     }
   }
