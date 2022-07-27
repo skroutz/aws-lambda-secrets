@@ -7,6 +7,12 @@ on:
       - master
       paths:
       - 'terraform/**'
+  push:
+      branches:
+      - main
+      - master
+      paths:
+      - 'terraform/**'
 
   workflow_dispatch:
 
@@ -41,7 +47,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: '[Terragrunt] Apply'
+    - name: '[Terraform] Apply'
       working-directory: ${{ env.TERRAFORM_DIR }}
       run: |
         terraform init
