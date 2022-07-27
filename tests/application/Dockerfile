@@ -4,6 +4,9 @@ FROM alpine:3.16 AS lambda-container
 WORKDIR /app/
 COPY lambda-application /app/
 
+# Add 'jq' to export JSON HTTP Response
+RUN apk add jq
+
 # == Setup 'lambda-secrets' ==
 # Add 'lambda-secrets' binary from Container Image
 COPY --from=lambda-secrets:latest /app/lambda-secrets /app/

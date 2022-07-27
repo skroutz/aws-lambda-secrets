@@ -1,12 +1,3 @@
 #!/bin/sh
 
-echo "This is the Lambda entrypoint!"
-echo "File:"
-echo "============"
-cat /tmp/lambda-secrets.env
-echo "============"
-echo
-echo "Environment:"
-echo "============"
-env
-echo "============"
+echo `jq -n '$ENV | to_entries | map(select(.key | startswith("LAMBDASECRETS"))) | from_entries'`
