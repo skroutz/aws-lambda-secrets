@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -27,7 +29,6 @@ const DEFAULT_REGION = "eu-central-1"
 const SECRETS_FILE = "./secrets.yaml"
 const OUTPUT_FILE = "./lambda-secrets.env"
 
-// var client *http.Client
 var (
 	secretsFile    string
 	region         string
@@ -39,10 +40,9 @@ var (
 	// extension name has to match the filename
 	extensionName   = filepath.Base(os.Args[0])
 	extensionClient = extension.NewClient(os.Getenv("AWS_LAMBDA_RUNTIME_API"))
-	// printPrefix     = fmt.Sprintf("[%s]", extensionName)
-	// identifier  string
 )
 
+// This function parses extension parameters as CLI arguments
 func getCommandParams() {
 	// Setup command line args
 	flag.IntVar(&timeout, "t", DEFAULT_TIMEOUT, "The amount of time to wait for any API call")
@@ -143,6 +143,7 @@ func fetchSecrets(secretsList []map[string]string) {
 	wg.Wait()
 }
 
+// Write secrets in dotenv file
 func writeEnvFile(outputFileName string) {
 	err := godotenv.Write(secretsEnv, outputFileName)
 	if err != nil {
@@ -159,10 +160,21 @@ func main() {
 
 	writeEnvFile(outputFileName)
 
+	// Lambda API client context
 	ctx, cancel := context.WithCancel(context.Background())
+	// Handle OS signals to cancel the context before terminating the extension process
+	interruptChannel := make(chan os.Signal, 1)
+	signal.Notify(interruptChannel, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		s := <-interruptChannel
+		log.Println("Received Signal: ", s)
+		log.Println("Exiting")
+		cancel()
+	}()
+
+	// Register extension to Lambda Runtime API
 	resp, err := extensionClient.Register(ctx, extensionName)
 	if err != nil {
 		panic(err)
 	}
-	defer cancel()
 }
