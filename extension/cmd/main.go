@@ -20,14 +20,14 @@ import (
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
 
-	"github.com/skroutz/aws-lambda-secrets/tree/feature/extension/extension/pkg/extension"
+	"github.com/skroutz/aws-lambda-secrets/pkg/extension"
 )
 
 // Constants for default values if none are supplied
 const DEFAULT_TIMEOUT = 5000
 const DEFAULT_REGION = "eu-central-1"
-const SECRETS_FILE = "./secrets.yaml"
-const OUTPUT_FILE = "./lambda-secrets.env"
+const SECRETS_FILE = "/var/task/secrets.yaml"
+const OUTPUT_FILE = "/tmp/lambda-secrets.env"
 
 var (
 	secretsFile    string
@@ -152,7 +152,32 @@ func writeEnvFile(outputFileName string) {
 	}
 }
 
+func processEvents(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			// Quit events loop on context cancellation
+			return
+		default:
+			log.Println("Waiting for event...")
+			res, err := extensionClient.NextEvent(ctx)
+			if err != nil {
+				panic(err)
+			}
+			log.Println("Received event:", res)
+			// Exit on SHUTDOWN event
+			if res.EventType == extension.Shutdown {
+				log.Println("Received SHUTDOWN event")
+				log.Println("Exiting ...")
+				return
+			}
+		}
+	}
+}
+
+// This function is only invoked on cold starts
 func main() {
+	log.Println("[extension] This function is only invoked on cold starts")
 	getCommandParams()
 
 	secretArns := getSecretArns(secretsFile)
@@ -173,8 +198,19 @@ func main() {
 	}()
 
 	// Register extension to Lambda Runtime API
-	resp, err := extensionClient.Register(ctx, extensionName)
+	reg_resp, err := extensionClient.Register(ctx, extensionName)
 	if err != nil {
 		panic(err)
 	}
+	log.Println("[extension] Register Response: ", reg_resp)
+
+	// next_resp, err := extensionClient.NextEvent(ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// log.Println("[extension] Next Response: ", next_resp)
+	// cancel()
+
+	processEvents(ctx)
+
 }

@@ -1,4 +1,4 @@
-module main.go
+module github.com/skroutz/aws-lambda-secrets
 
 go 1.18
 
