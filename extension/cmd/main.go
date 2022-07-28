@@ -6,6 +6,8 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -15,6 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/joho/godotenv"
 	"gopkg.in/yaml.v3"
+
+	"github.com/skroutz/aws-lambda-secrets/tree/feature/extension/extension/pkg/extension"
 )
 
 // Constants for default values if none are supplied
@@ -31,6 +35,12 @@ var (
 	outputFileName string
 
 	secretsEnv map[string]string
+
+	// extension name has to match the filename
+	extensionName   = filepath.Base(os.Args[0])
+	extensionClient = extension.NewClient(os.Getenv("AWS_LAMBDA_RUNTIME_API"))
+	// printPrefix     = fmt.Sprintf("[%s]", extensionName)
+	// identifier  string
 )
 
 func getCommandParams() {
@@ -149,10 +159,10 @@ func main() {
 
 	writeEnvFile(outputFileName)
 
-	// identifier, err = register()
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// next(identifier)
+	ctx, cancel := context.WithCancel(context.Background())
+	resp, err := extensionClient.Register(ctx, extensionName)
+	if err != nil {
+		panic(err)
+	}
+	defer cancel()
 }
