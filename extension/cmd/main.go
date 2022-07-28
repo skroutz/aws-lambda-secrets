@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"sync"
 	"time"
 
@@ -33,9 +31,6 @@ var (
 	outputFileName string
 
 	secretsEnv map[string]string
-
-	baseURL string
-	// identifier  string
 )
 
 func getCommandParams() {
@@ -149,15 +144,11 @@ func writeEnvFile(outputFileName string) {
 func main() {
 	getCommandParams()
 
-	baseURL = fmt.Sprintf("http://%s", os.Getenv("AWS_LAMBDA_RUNTIME_API"))
-	log.Printf("[Extension] Lambda API Base URL: %s", baseURL)
-
 	secretArns := getSecretArns(secretsFile)
 	fetchSecrets(secretArns["secrets"])
 
 	writeEnvFile(outputFileName)
 
-	// client = &http.Client{}
 	// identifier, err = register()
 	// if err != nil {
 	// 	panic(err)
