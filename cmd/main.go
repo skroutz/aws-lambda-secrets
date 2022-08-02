@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
+	"os"
+	"path/filepath"
 
 	smsecrets "github.com/skroutz/aws-lambda-secrets/internal/smsecrets"
+	extension "github.com/skroutz/aws-lambda-secrets/pkg/extension"
 )
 
 // Constants for default values if none are supplied
@@ -19,7 +23,10 @@ var (
 	timeout        int
 	outputFileName string
 
-	sm smsecrets.SecretsManager
+	// extension name has to match the filename
+	extensionName   = filepath.Base(os.Args[0])
+	extensionClient = extension.NewClient(os.Getenv("AWS_LAMBDA_RUNTIME_API"))
+	sm              smsecrets.SecretsManager
 )
 
 // This function parses extension parameters as CLI arguments
@@ -45,4 +52,15 @@ func main() {
 	secretArns := smsecrets.GetSecretArns(secretsFile)
 	sm.FetchSecrets(secretArns["secrets"])
 	smsecrets.WriteEnvFile(outputFileName)
+
+	// Lambda API client context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Register extension to Lambda Runtime API
+	reg_resp, err := extensionClient.Register(ctx, extensionName)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("[extension] Register Response: ", reg_resp)
 }
