@@ -28,7 +28,7 @@ var (
 	// extension name has to match the filename
 	extensionName   = filepath.Base(os.Args[0])
 	extensionClient = extension.NewClient(os.Getenv("AWS_LAMBDA_RUNTIME_API"))
-	sm              smsecrets.SecretsManager
+	sm              *smsecrets.SecretsManager
 )
 
 // This function parses extension parameters as CLI arguments
@@ -73,7 +73,7 @@ func main() {
 	log.Println("[extension] This function is only invoked on cold starts")
 	getCommandParams()
 
-	sm := smsecrets.NewSecretsManager(region, timeout)
+	sm = smsecrets.NewSecretsManager(region, timeout)
 	secretArns := smsecrets.GetSecretArns(secretsFile)
 	sm.FetchSecrets(secretArns["secrets"])
 	smsecrets.WriteEnvFile(outputFileName)
