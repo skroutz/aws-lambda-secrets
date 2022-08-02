@@ -44,6 +44,29 @@ func getCommandParams() {
 	flag.Parse()
 }
 
+func processEvents(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			// Quit events loop on context cancellation
+			return
+		default:
+			log.Println("Waiting for event...")
+			res, err := extensionClient.NextEvent(ctx)
+			if err != nil {
+				panic(err)
+			}
+			log.Println("Received event:", res)
+			// Exit on SHUTDOWN event
+			if res.EventType == extension.Shutdown {
+				log.Println("Received SHUTDOWN event")
+				log.Println("Exiting ...")
+				return
+			}
+		}
+	}
+}
+
 // This function is only invoked on cold starts
 func main() {
 
@@ -73,4 +96,6 @@ func main() {
 		panic(err)
 	}
 	log.Println("[extension] Register Response: ", reg_resp)
+
+	processEvents(ctx)
 }
