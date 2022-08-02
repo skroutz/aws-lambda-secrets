@@ -5,7 +5,9 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	smsecrets "github.com/skroutz/aws-lambda-secrets/internal/smsecrets"
 	extension "github.com/skroutz/aws-lambda-secrets/pkg/extension"
@@ -55,7 +57,15 @@ func main() {
 
 	// Lambda API client context
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// Handle OS signals to cancel the context before terminating the extension process
+	interruptChannel := make(chan os.Signal, 1)
+	signal.Notify(interruptChannel, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		s := <-interruptChannel
+		log.Println("Received Signal: ", s)
+		log.Println("Exiting")
+		cancel()
+	}()
 
 	// Register extension to Lambda Runtime API
 	reg_resp, err := extensionClient.Register(ctx, extensionName)
