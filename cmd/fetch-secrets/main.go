@@ -51,16 +51,16 @@ func processEvents(ctx context.Context) {
 			// Quit events loop on context cancellation
 			return
 		default:
-			log.Println("Waiting for event...")
+			log.Println("[extension] Waiting for event...")
 			res, err := extensionClient.NextEvent(ctx)
 			if err != nil {
 				panic(err)
 			}
-			log.Println("Received event:", res)
+			log.Println("[extension] Received event:", res.EventType)
 			// Exit on SHUTDOWN event
 			if res.EventType == extension.Shutdown {
-				log.Println("Received SHUTDOWN event")
-				log.Println("Exiting ...")
+				log.Println("[extension] Received SHUTDOWN event")
+				log.Println("[extension] Exiting ...")
 				return
 			}
 		}
@@ -85,17 +85,17 @@ func main() {
 	signal.Notify(interruptChannel, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		s := <-interruptChannel
-		log.Println("Received Signal: ", s)
-		log.Println("Exiting")
+		log.Println("[extension] Received Signal: ", s)
+		log.Println("[extension] Exiting")
 		cancel()
 	}()
 
 	// Register extension to Lambda Runtime API
-	reg_resp, err := extensionClient.Register(ctx, extensionName)
+	_, err := extensionClient.Register(ctx, extensionName)
 	if err != nil {
 		panic(err)
 	}
-	log.Println("[extension] Register Response: ", reg_resp)
+	// log.Println("[extension] Register Response: ", reg_resp)
 
 	processEvents(ctx)
 }
