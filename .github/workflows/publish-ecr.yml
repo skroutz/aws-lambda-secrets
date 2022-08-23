@@ -13,7 +13,7 @@ on:
 
 env:
   AWS_REGION: eu-central-1                 # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: lambda-secrets           # set this to your Amazon ECR repository name
+  ECR_REPOSITORY: aws-lambda-secrets-layer           # set this to your Amazon ECR repository name
 
 permissions:
   contents: read
