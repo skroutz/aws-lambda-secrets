@@ -1,7 +1,7 @@
 locals {
 
   # ==============================================
-  project-name        = "lambda-secrets"
+  project-name        = "aws-lambda-secrets-extension"
   iam-resource-prefix = "SkroutzLambdaSecretsApp"
   # ==============================================
 
