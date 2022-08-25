@@ -30,7 +30,8 @@ data "aws_iam_policy_document" "user-policy-document" {
     ]
 
     resources = [
-      local.lambda-layer-arn
+      "${local.lambda-layer-arn}-x86_64",
+      "${local.lambda-layer-arn}-arm64"
     ]
   }
 }
