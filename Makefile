@@ -36,7 +36,7 @@ zip-arm64: build-arm64
 	zip -r aws-lambda-secrets-arm64.zip extension/
 	@echo "Extension arm64 zip archive created"
 
-release: zip-amd64 zip-arm64
+release: zip-amd64 zip-arm64 clean
 
 clean:
 	-rm -rf extension
