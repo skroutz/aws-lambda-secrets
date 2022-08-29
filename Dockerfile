@@ -1,19 +1,24 @@
-FROM golang:1.18-alpine AS builder
+FROM golang:1.18 AS builder
 
-WORKDIR /app
+WORKDIR /extension
 
-COPY src/go.mod src/go.sum /app/
-RUN go mod download
+COPY go.mod go.sum /extension/
+COPY pkg /extension/pkg
+COPY internal /extension/internal
+COPY cmd /extension/cmd
 
-COPY src/*.go /app/
 
-RUN go mod verify && \
-	go build -v -o lambda-secrets
+RUN go mod edit -replace=github.com/skroutz/aws-lambda-secrets/internal/smsecrets=./internal/smsecrets && \
+    go mod edit -replace=github.com/skroutz/aws-lambda-secrets/pkg/extension=./pkg/extension && \
+    go mod tidy && \
+    go mod verify && \
+    go build -v -o extension/fetch-secrets cmd/fetch-secrets/main.go && \
+    go build -v -o extension/wrapper/load-secrets cmd/load-secrets/main.go
 
-FROM alpine:3.16 AS runtime
+FROM golang:1.18 AS runtime
 
-WORKDIR /app
+WORKDIR /extension
 
-COPY --from=builder /app/lambda-secrets lambda-secrets 
+COPY --from=builder /extension/extension /extension
 
-ENTRYPOINT ["/app/lambda-secrets"]
+ENTRYPOINT ["ls -l extension"]
