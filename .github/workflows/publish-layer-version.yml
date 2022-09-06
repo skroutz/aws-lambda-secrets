@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy-secrets-layer:
+  publish-secrets-layer:
     name: Publish Secrets Layer Version
     runs-on: ubuntu-latest
     environment: production
