@@ -1,4 +1,4 @@
-name: Upload to Amazon ECR
+name: Build and Push Secrets Image
 
 on:
   push:
@@ -17,16 +17,18 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy
+  publish-secrets-image:
+    name: Publish Secrets Image
     runs-on: ubuntu-latest
     environment: production
 
     steps:
     - name: Checkout
+      id: checkout
       uses: actions/checkout@v3
 
     - name: Set up QEMU
+      id: qemu
       uses: docker/setup-qemu-action@master
       with:
         platforms: linux/amd64, linux/arm64
@@ -36,6 +38,7 @@ jobs:
       uses: docker/setup-buildx-action@master
 
     - name: Configure AWS credentials
+      id: aws-credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -48,7 +51,16 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Build
+    - name: Login to GitHub Container Registry
+      id: login-ghcr
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and Push Image
+      id: build-and-push
       uses: docker/build-push-action@v2
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -63,3 +75,5 @@ jobs:
         tags: |
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
