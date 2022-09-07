@@ -17,10 +17,11 @@ permissions:
   contents: read
 
 jobs:
-  publish-secrets-image:
-    name: Publish Secrets Image
+  build-and-push-image:
     runs-on: ubuntu-latest
-    environment: production
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - name: Checkout
@@ -58,14 +59,21 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Build and Push Image
-      id: build-and-push
-      uses: docker/build-push-action@v2
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v4
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: aws-lambda-secrets-extension
-        IMAGE_TAG: ${{ github.sha }}
+      with:
+        images: |
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+          ghcr.io/${{ github.repository }}
+
+    - name: Build and Push Image
+      id: build-and-push
+      uses: docker/build-push-action@v2
       with:
         builder: ${{ steps.buildx.outputs.name }}
         context: .
@@ -73,7 +81,9 @@ jobs:
         platforms: linux/amd64, linux/arm64
         push: true
         tags: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          ghcr.io/${{ github.repository }}:${{ github.sha }}
           ghcr.io/${{ github.repository }}:latest
-          ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+        labels: ${{ steps.meta.outputs.labels }}
