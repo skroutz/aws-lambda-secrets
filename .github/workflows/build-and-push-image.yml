@@ -2,11 +2,14 @@ name: Build and Push Secrets Image
 
 on:
   push:
+    tags: "releases/[1-9]+.[0-9]+.[0-9]+"
     branches:
       - "main"
       - "develop/*"
     paths:
-      - 'src/**'
+      - 'cmd/**'
+      - 'internal/**'
+      - 'pkg/**'
       - 'Dockerfile'
   workflow_dispatch:
 
@@ -70,10 +73,20 @@ jobs:
         images: |
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
           ghcr.io/${{ github.repository }}
+    
+    - name: Set Release Tag
+      id: tag
+      run: |
+        TAG=${GITHUB_REF##*/}
+        echo $TAG
+        echo "TAG=$TAG" >> $GITHUB_ENV
 
     - name: Build and Push Image
       id: build-and-push
       uses: docker/build-push-action@v2
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: aws-lambda-secrets-extension
       with:
         builder: ${{ steps.buildx.outputs.name }}
         context: .
@@ -82,8 +95,8 @@ jobs:
         push: true
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:v${{ env.TAG }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          ghcr.io/${{ github.repository }}:${{ github.sha }}
+          ghcr.io/${{ github.repository }}:v${{ env.TAG }}
           ghcr.io/${{ github.repository }}:latest
         labels: ${{ steps.meta.outputs.labels }}
