@@ -5,7 +5,9 @@ on:
       - "main"
       - "master"
     paths:
-      - 'src/**'
+      - 'cmd/**'
+      - 'pkg/**'
+      - 'internal/**'
   workflow_dispatch:
 
 env:
@@ -45,9 +47,15 @@ jobs:
           make release
 
       - name: Update Lambda Layer Version
-        # env:
-        #   release_id: ${{ format('aws-lambda-secrets-{0}.zip', github.head_ref )}}
+        env:
+          AWS_ORGANIZATION_ID: ${{ secrets.AWS_ORGANIZATION_ID }}
         run: |
-          aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-x86_64" --zip-file fileb://aws-lambda-secrets-amd64.zip  --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures x86_64
-          aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-arm64" --zip-file fileb://aws-lambda-secrets-arm64.zip  --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures arm64
+          VERSION_x86_64=$(aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-x86_64" --zip-file fileb://aws-lambda-secrets-amd64.zip --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures x86_64 | jq -r ".Version")
+          
+          aws lambda add-layer-version-permission --layer-name "${LAMBDA_SECRETS_LAYER}-x86_64" --statement-id "xaccount" --principal "*" --organization-id "${{ env.AWS_ORGANIZATION_ID }}" --action "lambda:GetLayerVersion" --version-number "$VERSION_x86_64"
+
+          VERSION_arm64=$(aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-arm64" --zip-file fileb://aws-lambda-secrets-arm64.zip --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures arm64 | jq -r ".Version")
+
+          aws lambda add-layer-version-permission --layer-name "${LAMBDA_SECRETS_LAYER}-arm64" --statement-id "xaccount" --principal "*" --organization-id "${{ env.AWS_ORGANIZATION_ID }}" --action "lambda:GetLayerVersion" --version-number "$VERSION_arm64"
+
           rm aws-lambda-secrets-amd64.zip aws-lambda-secrets-arm64.zip
