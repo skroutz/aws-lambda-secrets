@@ -26,14 +26,29 @@ data "aws_iam_policy_document" "user-policy-document" {
     effect = "Allow"
 
     actions = [
-      "lambda:PublishLayerVersion"
+      "lambda:PublishLayerVersion",
     ]
 
     resources = [
       "${local.lambda-layer-arn}-x86_64",
-      "${local.lambda-layer-arn}-arm64"
+      "${local.lambda-layer-arn}-arm64",
     ]
   }
+
+    statement {
+    sid = "AddLayerVersionPermission"
+    effect = "Allow"
+
+    actions = [
+      "lambda:AddLayerVersionPermission",
+    ]
+
+    resources = [
+      "${local.lambda-layer-arn}-x86_64:*",
+      "${local.lambda-layer-arn}-arm64:*",
+    ]
+  }
+
 }
 
 # Add ARN (module.user-policy.arn) to 'module.user-role.custom_role_policy_arns'
