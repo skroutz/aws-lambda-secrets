@@ -2,7 +2,7 @@ name: Build and Push Secrets Image
 
 on:
   push:
-    tags: "releases/[1-9]+.[0-9]+.[0-9]+"
+    tags: "v[0-9]+.[0-9]+.[0-9]+"
     branches:
       - "main"
       - "develop/*"
@@ -73,7 +73,7 @@ jobs:
         images: |
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
           ghcr.io/${{ github.repository }}
-    
+
     - name: Set Release Tag
       id: tag
       run: |
@@ -95,8 +95,8 @@ jobs:
         push: true
         tags: |
           ${{ steps.meta.outputs.tags }}
-          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:v${{ env.TAG }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          ghcr.io/${{ github.repository_owner }}/${{ env.ECR_REPOSITORY }}:v${{ env.TAG }}
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
           ghcr.io/${{ github.repository_owner }}/${{ env.ECR_REPOSITORY }}:latest
+          ghcr.io/${{ github.repository_owner }}/${{ env.ECR_REPOSITORY }}:${{ env.TAG }}
         labels: ${{ steps.meta.outputs.labels }}
