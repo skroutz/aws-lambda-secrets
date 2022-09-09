@@ -44,8 +44,8 @@ The syntax is the YAML equivalent of the JSON [ECS Task Definition `secrets` fie
 To add the extension to a Lambda Function
 1. Create a `secrets.yaml` file, following the above syntax in the Lambda application repo
 2. Include the following Lambda Layer ARN to your Lambda function based on its architecture:
-   * x86_64: `arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-x86_64:1`
-   * arm64: `arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-arm64:1`
+   * x86_64: `arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-x86_64:15`
+   * arm64: `arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-arm64:15`
 3. Set the value of the `AWS_LAMBDA_EXEC_WRAPPER` environment variable to `/opt/extensions/wrapper/load-secrets`
 
 Terraform deployment [example](https://github.com/skroutz/aws-secretsmanager-lambda-example/blob/main/terraform/lambda-function.tf#L1):
@@ -58,7 +58,7 @@ module "lambda-function-example" {
   description     = "Example Lambda Function with extension"
 [...]
   layers = [
-    "arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-x86_64:1"
+    "arn:aws:lambda:eu-central-1:533973265978:layer:aws-lambda-secrets-layer-x86_64:15"
   ]
 [...]
   environment_variables = tomap({
@@ -84,8 +84,8 @@ COPY app.py ${LAMBDA_TASK_ROOT}/app.py
 COPY secrets.yaml ${LAMBDA_TASK_ROOT}/secrets.yaml
 
 # Add extension from aws-lambda-secrets-extension image into /opt
-COPY --from=533973265978.dkr.ecr.eu-central-1.amazonaws.com/aws-lambda-secrets-extension:latest /extension/fetch-secrets /opt/extensions/fetch-secrets
-COPY --from=533973265978.dkr.ecr.eu-central-1.amazonaws.com/aws-lambda-secrets-extension:latest /extension/wrapper/load-secrets /opt/extensions/wrapper/load-secrets
+COPY --from=ghcr.io/skroutz/aws-lambda-secrets-extension:v1.0.0 /extension/fetch-secrets /opt/extensions/fetch-secrets
+COPY --from=ghcr.io/skroutz/aws-lambda-secrets-extension:v1.0.0 /extension/wrapper/load-secrets /opt/extensions/wrapper/load-secrets
 
 # Pass the actual ENTRYPOINT to '/opt/extensions/wrapper/load-secrets':
 ENV AWS_LAMBDA_EXEC_WRAPPER "/opt/extensions/wrapper/load-secrets"
