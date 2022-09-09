@@ -93,6 +93,9 @@ ENV AWS_LAMBDA_EXEC_WRAPPER "/opt/extensions/wrapper/load-secrets"
 # Lambda Entrypoint CMD params
 CMD ["app.lambda_handler"]
 ```
+
+For Github Actions CI integration, read access on the extension [package](https://github.com/skroutz/aws-lambda-secrets/pkgs/container/aws-lambda-secrets-extension) has to be granted for the Lambda App repository by the Security Team.
+
 [\2][\5][\6]
 
 ## Reference
