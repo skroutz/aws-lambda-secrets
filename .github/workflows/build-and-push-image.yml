@@ -97,6 +97,6 @@ jobs:
           ${{ steps.meta.outputs.tags }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:v${{ env.TAG }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-          ghcr.io/${{ github.repository }}:v${{ env.TAG }}
-          ghcr.io/${{ github.repository }}:latest
+          ghcr.io/${{ github.repository_owner }}/${{ env.ECR_REPOSITORY }}:v${{ env.TAG }}
+          ghcr.io/${{ github.repository_owner }}/${{ env.ECR_REPOSITORY }}:latest
         labels: ${{ steps.meta.outputs.labels }}
