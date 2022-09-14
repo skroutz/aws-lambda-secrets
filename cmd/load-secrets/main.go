@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/joho/godotenv"
@@ -16,11 +16,9 @@ const SECRETS_FILE = "/tmp/lambda-secrets.env"
 const ENTRYPOINT_ENV_VAR = "ENTRYPOINT"
 
 var (
-	secretsFile string
-	// outputFileName   string
+	secretsFile      string
 	entrypointEnvVar string
 	entrypointArray  []string
-	// exitCode         int
 )
 
 func getCommandParams() {
@@ -77,19 +75,25 @@ func ExecuteEntrypoint() (string, error) {
 	err := godotenv.Load(secretsFile)
 	if err != nil {
 		log.Printf("[-] Error loading  EnvVars from '%s' file. %s", secretsFile, err.Error())
-
 		return "", err
 	}
 
-	err = nil
-	cmd := []byte{}
+	var cmd string
 	if entrypointArray == nil {
 		entrypoint := os.Getenv(ENTRYPOINT_ENV_VAR)
-		log.Printf("[!] Passing execution to '%s'\n\n", entrypoint)
-		cmd, err = exec.Command("sh", "-c", entrypoint).Output()
+		log.Printf("[!] entrypointArray is nil. Passing execution to '%s'\n\n", entrypoint)
+		cmd, err := exec.LookPath(entrypoint)
+		if err != nil {
+			panic(err)
+		}
+		syscall.Exec(cmd, nil, os.Environ())
 	} else {
 		log.Printf("[!] Passing execution to '%s'\n\n", entrypointArray)
-		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()
+		cmd, err := exec.LookPath(entrypointArray[0])
+		if err != nil {
+			panic(err)
+		}
+		err = syscall.Exec(cmd, entrypointArray, os.Environ())
 	}
 
 	if err != nil {
@@ -97,10 +101,9 @@ func ExecuteEntrypoint() (string, error) {
 		return "", err
 	}
 
-	fmt.Println(string(cmd))
 	log.Printf("[*] Execution finished")
 
-	return string(cmd), nil
+	return cmd, nil
 }
 
 func main() {
