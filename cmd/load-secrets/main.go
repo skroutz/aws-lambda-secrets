@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/joho/godotenv"
@@ -85,11 +86,22 @@ func ExecuteEntrypoint() (string, error) {
 	cmd := []byte{}
 	if entrypointArray == nil {
 		entrypoint := os.Getenv(ENTRYPOINT_ENV_VAR)
+		log.Printf("[!] entrypointArray was nil, executing with %s\n", entrypoint)
 		log.Printf("[!] Passing execution to '%s'\n\n", entrypoint)
 		cmd, err = exec.Command("sh", "-c", entrypoint).Output()
 	} else {
 		log.Printf("[!] Passing execution to '%s'\n\n", entrypointArray)
-		cmd, err = exec.Command(entrypointArray[0], entrypointArray[1:]...).Output()
+		if _, err := os.Stat(entrypointArray[0]); err != nil {
+			fmt.Printf("[!] File %s not found.\n", entrypointArray[0])
+		}
+
+		env := os.Environ()
+
+		execErr := syscall.Exec(entrypointArray[0], entrypointArray, env)
+
+		if execErr != nil {
+			panic(err)
+		}
 	}
 
 	if err != nil {
