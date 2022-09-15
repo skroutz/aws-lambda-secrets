@@ -94,6 +94,38 @@ ENV AWS_LAMBDA_EXEC_WRAPPER "/opt/extensions/wrapper/load-secrets"
 CMD ["app.lambda_handler"]
 ```
 
+### Custom Lambda Container
+
+Custom runtimes do not respect `AWS_LAMBDA_EXEC_WRAPPER`, thus will not execute the wrapper script as the function entrypoint. To enable wrapper scripts alongside [Runtime Interface Clients](https://docs.aws.amazon.com/lambda/latest/dg/runtimes-images.html#runtimes-api-client), the extension script has to be set as the container's ENTRYPOINT responsible for passing execution to RIC executable with proper arguments, so that it invokes the function handler.
+
+Lambda Custom Container for an [example](https://github.com/skroutz/aws-secretsmanager-lambda-example/tree/main/lambda-custom-container) Ruby Application
+
+```dockerfile
+FROM ruby:2.5
+
+COPY secrets.yaml /var/task/secrets.yaml
+
+COPY Gemfile /
+COPY Gemfile.lock /
+
+RUN apt-get -y update \
+    && apt-get install -qqy \
+    build-essential \
+    && gem install bundler -v 1.17.3 \
+    && bundle install \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV AWS_LAMBDA_RUNTIME_API=3.9
+
+COPY --from=ghcr.io/skroutz/aws-lambda-secrets-extension:v1.0.0 /extension/fetch-secrets /opt/extensions/fetch-secrets
+COPY --from=ghcr.io/skroutz/aws-lambda-secrets-extension:v1.0.0 /extension/wrapper/load-secrets /opt/extensions/wrapper/load-secrets
+
+COPY . /
+
+ENTRYPOINT [ "/opt/extensions/wrapper/load-secrets" ]
+CMD [ "/usr/local/bundle/bin/aws_lambda_ric", "app.Lambdas::App.process"]
+```
+
 For Github Actions CI integration, read access on the extension [package](https://github.com/skroutz/aws-lambda-secrets/pkgs/container/aws-lambda-secrets-extension) has to be granted for the Lambda App repository by the Security Team.
 
 [\2][\5][\6]
