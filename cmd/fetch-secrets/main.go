@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	smsecrets "github.com/skroutz/aws-lambda-secrets/internal/smsecrets"
@@ -31,14 +32,41 @@ var (
 	sm              *smsecrets.SecretsManager
 )
 
+func envOrString(envKey string, constant string) string {
+	if val, ok := os.LookupEnv(envKey); ok {
+		return val
+	}
+
+	return constant
+}
+
+func envOrInt(envKey string, constant int) int {
+	if val, ok := os.LookupEnv(envKey); ok {
+		v, err := strconv.Atoi(val)
+
+		if err != nil {
+			// Fallback to default if unparsable env
+			return constant
+		}
+
+		return v
+	}
+
+	return constant
+}
+
 // This function parses extension parameters as CLI arguments
 func getCommandParams() {
 	// Setup command line args
-	flag.IntVar(&timeout, "t", DEFAULT_TIMEOUT, "The amount of time to wait for any API call")
-	flag.StringVar(&region, "r", DEFAULT_REGION, "The Amazon Region to use")
-	flag.StringVar(&secretsFile, "f", SECRETS_FILE,
+	flag.IntVar(&timeout, "t", envOrInt("SECRETS_TIMEOUT", DEFAULT_TIMEOUT),
+		"The amount of time to wait for any API call")
+	flag.StringVar(&region, "r",
+		envOrString("SECRETS_AWS_REGION", DEFAULT_REGION),
+		"The Amazon Region to use")
+	flag.StringVar(&secretsFile, "f", envOrString("SECRETS_FILE", SECRETS_FILE),
 		"The YAML file containing SecretsManager ARNs and Env Var names")
-	flag.StringVar(&outputFileName, "o", OUTPUT_FILE,
+	flag.StringVar(&outputFileName, "o",
+		envOrString("SECRETS_OUTPUT_FILE", OUTPUT_FILE),
 		"The file that will be populated with SecretsManager secrets as Env Vars")
 	// Parse all of the command line args into the specified vars with the defaults
 	flag.Parse()
