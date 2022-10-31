@@ -1,0 +1,62 @@
+name: Publish Lambda Secrets Layer
+on:
+  push:
+    tags: "v[0-9]+.[0-9]+.[0-9]+"
+    branches:
+      - "main"
+      - "develop/*"
+    paths:
+      - 'cmd/**'
+      - 'pkg/**'
+      - 'internal/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-central-1
+  LAMBDA_SECRETS_LAYER: 'aws-lambda-secrets-layer'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-secrets-layer:
+    name: Publish Secrets Layer Version
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: 'Checkout Source Code'
+        uses: actions/checkout@v1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.ASSUME_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-duration-seconds: 900
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Cross Complile Go Scripts and Generate ZIP archives
+        # working-directory: src/
+        run: |
+          make release
+
+      - name: Update Lambda Layer Version
+        env:
+          AWS_ORGANIZATION_ID: ${{ secrets.AWS_ORGANIZATION_ID }}
+        run: |
+          VERSION_x86_64=$(aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-x86_64" --zip-file fileb://aws-lambda-secrets-amd64.zip --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures x86_64 | jq -r ".Version")
+          
+          aws lambda add-layer-version-permission --layer-name "${LAMBDA_SECRETS_LAYER}-x86_64" --statement-id "xaccount" --principal "*" --organization-id "${{ env.AWS_ORGANIZATION_ID }}" --action "lambda:GetLayerVersion" --version-number "$VERSION_x86_64"
+
+          VERSION_arm64=$(aws lambda publish-layer-version --layer-name "${LAMBDA_SECRETS_LAYER}-arm64" --zip-file fileb://aws-lambda-secrets-arm64.zip --compatible-runtimes python3.9 python3.8 ruby2.5 --compatible-architectures arm64 | jq -r ".Version")
+
+          aws lambda add-layer-version-permission --layer-name "${LAMBDA_SECRETS_LAYER}-arm64" --statement-id "xaccount" --principal "*" --organization-id "${{ env.AWS_ORGANIZATION_ID }}" --action "lambda:GetLayerVersion" --version-number "$VERSION_arm64"
+
+          rm aws-lambda-secrets-amd64.zip aws-lambda-secrets-arm64.zip
