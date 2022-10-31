@@ -1,0 +1,55 @@
+name: Terraform Apply on Merge
+
+on:
+  pull_request:
+      branches:
+      - main
+      - master
+      paths:
+      - 'terraform/**'
+  push:
+      branches:
+      - main
+      - master
+      paths:
+      - 'terraform/**'
+
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-central-1
+
+  TERRAFORM_VERSION: '1.2.4'
+  TERRAFORM_DIR: "./terraform"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: '[AWS] Configure credentials'
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        role-to-assume: ${{ secrets.ASSUME_ROLE }}
+        role-duration-seconds: 900
+
+    - name: '[Setup] Terraform'
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: '[Terraform] Apply'
+      working-directory: ${{ env.TERRAFORM_DIR }}
+      run: |
+        terraform init
+        terraform apply -auto-approve
+
