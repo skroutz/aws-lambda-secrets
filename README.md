@@ -153,3 +153,7 @@ Previous Work and Relevant Repos
 2. https://github.com/hashicorp/vault-lambda-extension
 3. https://github.com/square/lambda-secrets-prefetch
 4. https://github.com/aws/aws-lambda-go
+
+## Credits
+* [@operatorequals](https://github.com/operatorequals) for the bootstrap base repo design and terratest end-to-end testing
+* [@avgerin0s](https://github.com/avgerin0s) for beta testing and custom container integration
