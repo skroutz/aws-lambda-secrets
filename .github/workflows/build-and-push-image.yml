@@ -11,6 +11,8 @@ on:
       - 'internal/**'
       - 'pkg/**'
       - 'Dockerfile'
+    paths-ignore:
+      - 'cmd/ec2_secrets/**'
   workflow_dispatch:
 
 permissions:
