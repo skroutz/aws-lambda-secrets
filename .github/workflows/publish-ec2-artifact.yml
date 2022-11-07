@@ -1,0 +1,44 @@
+name: Publish EC2 entrypoint artifact
+
+on:
+  push:
+    tags: "v[0-9]+.[0-9]+.[0-9]+"
+    branches:
+      - "main"
+      - "develop/*"
+    paths:
+      - 'cmd/ec2_secrets/**'
+      - 'internal/**'
+      - 'pkg/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-ec2-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      id: checkout
+      uses: actions/checkout@v3
+
+    - name: Go build
+      id: build
+      run: 
+        make ec2-secrets-amd64
+
+    # - name: Set Release Tag
+    #   id: tag
+    #   run: |
+    #     TAG=${GITHUB_REF##*/}
+    #     echo $TAG
+    #     echo "TAG=$TAG" >> $GITHUB_ENV
+
+    - name: Release
+      id: release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ec2/ec2-secrets
