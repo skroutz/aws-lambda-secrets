@@ -16,7 +16,7 @@ provider "aws" {
       DeployedFrom = "https://github.com/skroutz/aws-lambda-secrets"
       Team         = "Security"
       Environment  = "Staging"
-      ManagedBy    = "Terraform"
+      ManagedBy    = "Terraform" 
     }
   }
 }
